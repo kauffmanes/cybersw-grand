@@ -1,187 +1,96 @@
-type Site {
-    area: Float
-    artifactCollections: [ArtifactCollection] @relationship(type: "FOUND_IN", direction: IN)
-    beginAge: Int
-    beginPhase: Int
-    country: String
-    county: String
-    culture: String
-    endAge: Int
-    endPhase: Int
-    features: [Feature] @relationship(type: "CONTAINS", direction: IN)
-    # functionalStrati: [???]
-    # horizontalFeatures: [???]
-    # horizontalSubFeatures: [???]
-    hu2: Int
-    hu4: Int
-    hu6: Int
-    hu8: Int
-    hu10: Int
-    latitude: Float!
-    length: Float
-    # levels: [???]
-    # loci: ???
-    longitude: Float!
-    maxRooms: Int
-    meanRooms: Int
-    microRegion: String
-    macroRegion: String
-    minRooms: Int
+scalar Point
+scalar DateTime
+scalar PointInput
+
+type User {
+  userId: ID!
+  name: String
+  reviews: [Review] @relationship(type: "WROTE", direction: OUT)
+  avgStars: Float
+    @cypher(
+      statement: "MATCH (this)-[:WROTE]->(r:Review) RETURN toFloat(avg(r.stars))"
+    )
+  numReviews: Int
+    @cypher(statement: "MATCH (this)-[:WROTE]->(r:Review) RETURN COUNT(r)")
+  recommendations(first: Int = 3): [Business]
+    @cypher(
+      statement: "MATCH (this)-[:WROTE]->(r:Review)-[:REVIEWS]->(:Business)<-[:REVIEWS]-(:Review)<-[:WROTE]-(:User)-[:WROTE]->(:Review)-[:REVIEWS]->(rec:Business) WHERE NOT EXISTS( (this)-[:WROTE]->(:Review)-[:REVIEWS]->(rec) ) WITH rec, COUNT(*) AS num ORDER BY num DESC LIMIT $first RETURN rec"
+    )
+}
+
+type Business {
+  businessId: ID!
+  name: String!
+  address: String
+  city: String
+  state: String
+  location: Point
+  avgStars: Float
+    @cypher(
+      statement: "MATCH (this)<-[:REVIEWS]-(r:Review) RETURN coalesce(avg(r.stars),0.0)"
+    )
+  reviews: [Review] @relationship(type: "REVIEWS", direction: IN)
+  categories: [Category] @relationship(type: "IN_CATEGORY", direction: OUT)
+}
+
+type Review {
+  reviewId: ID!
+  stars: Float
+  text: String
+  date: DateTime
+  business: Business @relationship(type: "REVIEWS", direction: OUT)
+  user: User @relationship(type: "WROTE", direction: IN)
+}
+
+type Category {
+  name: ID!
+  businesses: [Business] @relationship(type: "IN_CATEGORY", direction: IN)
+}
+
+type RatingCount @exclude {
+  stars: Float!
+  count: Int!
+}
+
+type Mutation {
+  mergeBusinessCategory(categories: [String!]!, businessId: ID!): Business
+    @cypher(
+      statement: "MATCH (b:Business {businessId: $businessId}) UNWIND $categories AS cat MERGE (c:Category {name: cat}) MERGE (b)-[:IN_CATEGORY]->(c) RETURN b"
+    )
+  mergeUser(name: String!, userId: ID!): User
+    @cypher(
+      statement: """
+      MERGE (u:User {userId: $userId})
+      ON CREATE SET u.name = $name
+      RETURN u
+      """
+    )
+  mergeBusiness(
+    businessId: ID!
     name: String!
-    roomPeriods: [Int]
-    # percentages: [???]
-    periods: [Int]
-    provenance: [Provenance]
-    provenanceEvents: [ProvenanceEvent]
-    state: String
-    systemMaps: [SystemMap]
-    # units: [???]
-    uuid: ID!
-    # verticalStrati: [???]
-    width: Float
+    address: String!
+    city: String!
+    state: String!
+    latitude: Float!
+    longitude: Float!
+  ): Business
+    @cypher(
+      statement: """
+      MERGE (b:Business {businessId: $businessId})
+      ON CREATE SET b.name = $name,
+                    b.address = $address,
+                    b.city = $city,
+                    b.state = $state,
+                    b.location = Point({latitude: $latitude, longitude: $longitude})
+      RETURN b
+      """
+    )
 }
 
-
-type ArtifactCollection {
-    artifactType: ArtifactType
-    count: Int
-    # functionalStratum: ???
-    # horizontalFeature: ???
-    # horizontalSubFeature: ???
-    # level: ???
-    # locus: ???
-    site: Site @relationship(type: "FOUND_IN", direction: OUT) # (uuid?)
-    source: String
-    # unit: ???
-    uuid: ID!
-    # verticalStratum: ???
-}
-
-type Provenance {
-    date: Date
-    # collectionMethod: ???
-    hasIntrasite: Boolean
-    isOld: Boolean
-    isSubsurface: Boolean
-    isScreened: Boolean
-    # nodes: [???]
-    people: [People]
-    # source: ???
-    sourceDisplayName: String
-    subSection: String
-    uuid: ID!
-}
-
-type Feature {
-    area: Float
-    architecture: Boolean
-    attributes: [Attribute]
-    # contextPlot: ???
-    date: Date
-    details: String
-    diameter: Float
-    diameterAboveBenchMin: Float
-    diameterAboveBenchMax: Float
-    featureType: FeatureType
-    featureTypeName: String
-    hasAttachedRooms: Boolean
-    hasKivaInside: Boolean
-    height: Float
-    # humanOrAnimal: ???
-    isCremation: Boolean
-    isHuman: Boolean
-    isMound: Boolean
-    isPrimary: Boolean
-    isRocks: Boolean
-    length: Float
-    minStoreys: Int
-    maxStoreys: Int
-    # orientation: ???
-    position: String
-    primary: Boolean
-    provenance: [Provenance]
-    public: Boolean
-    relationToPlaza: String
-    sites: [Site] @relationship(type: "FOUND_IN", direction: OUT)
-    shape: String
-    storiesMax: Int
-    storiesMin: Int
-    surfaceArea: Float
-    type: String
-    use: String
-    uuid: ID!
-    width: Float
-    volume: Float
-}
-
-enum FeatureType {
-    AgriculturalFeature
-    Ballcourt
-    Burial
-    Concentration
-    GreatHouse
-    GreatKiva
-    Pit
-    ReligiousArchitecture
-    MultiwallStructure
-    MortuaryFeature
-}
-
-type Attribute {
-    area: Float
-    construction: String
-    count: Int
-    diameter: Float
-    height: Float
-    length: Float
-    # location: ??? 
-    minDiameter: Float
-    maxDiameter: Float
-    # orientation: ???
-    shape: String
-    surfaceArea: Float
-    type: String
-    uuid: ID!
-    width: Float
-    volume: Float
-
-}
-
-type SystemMap {
-    site: String # uuid of site?
-    system: String
-    uuid: ID!
-    value: String
-}
-
-type ArtifactType {
-    artifactType: String
-    beginAge: Int
-    canChronologyBuilding: Boolean
-    ceramicWare: CeramicWare
-    decoration: String
-    endAge: Int
-    isCorrugated: Boolean
-    isDecorated: Boolean
-    isRedSlipped: Boolean
-    name: String
-    uuid: ID!
-}
-
-type CeramicWare {
-    name: String
-    uuid: ID!
-}
-
-type ProvenanceEvent {
-    provenance: Provenance
-    uuid: ID!
-}
-
-type People {
-    firstName: String
-    middleName: String
-    lastName: String
-    suffix: String
-    uuid: ID!
+type Query {
+  userCount: Int! @cypher(statement: "MATCH (u:User) RETURN COUNT(u)")
+  ratingsCount: [RatingCount]
+    @cypher(
+      statement: "MATCH (r:Review) WITH r.stars AS stars, COUNT(*) AS count ORDER BY stars RETURN {stars: stars, count: count}"
+    )
 }

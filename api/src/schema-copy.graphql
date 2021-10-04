@@ -1,0 +1,187 @@
+type Site {
+    area: Float
+    artifactCollections: [ArtifactCollection] @relationship(type: "FOUND_IN", direction: IN)
+    beginAge: Int
+    beginPhase: Int
+    country: String
+    county: String
+    culture: String
+    endAge: Int
+    endPhase: Int
+    features: [Feature] @relationship(type: "CONTAINS", direction: IN)
+    # functionalStrati: [???]
+    # horizontalFeatures: [???]
+    # horizontalSubFeatures: [???]
+    hu2: Int
+    hu4: Int
+    hu6: Int
+    hu8: Int
+    hu10: Int
+    latitude: Float!
+    length: Float
+    # levels: [???]
+    # loci: ???
+    longitude: Float!
+    maxRooms: Int
+    meanRooms: Int
+    microRegion: String
+    macroRegion: String
+    minRooms: Int
+    name: String!
+    roomPeriods: [Int]
+    # percentages: [???]
+    periods: [Int]
+    provenance: [Provenance]
+    provenanceEvents: [ProvenanceEvent]
+    state: String
+    systemMaps: [SystemMap]
+    # units: [???]
+    uuid: ID!
+    # verticalStrati: [???]
+    width: Float
+}
+
+
+type ArtifactCollection {
+    artifactType: ArtifactType
+    count: Int
+    # functionalStratum: ???
+    # horizontalFeature: ???
+    # horizontalSubFeature: ???
+    # level: ???
+    # locus: ???
+    site: Site @relationship(type: "FOUND_IN", direction: OUT) # (uuid?)
+    source: String
+    # unit: ???
+    uuid: ID!
+    # verticalStratum: ???
+}
+
+type Provenance {
+    date: Date
+    # collectionMethod: ???
+    hasIntrasite: Boolean
+    isOld: Boolean
+    isSubsurface: Boolean
+    isScreened: Boolean
+    # nodes: [???]
+    people: [People]
+    # source: ???
+    sourceDisplayName: String
+    subSection: String
+    uuid: ID!
+}
+
+type Feature {
+    area: Float
+    architecture: Boolean
+    attributes: [Attribute]
+    # contextPlot: ???
+    date: Date
+    details: String
+    diameter: Float
+    diameterAboveBenchMin: Float
+    diameterAboveBenchMax: Float
+    featureType: FeatureType
+    featureTypeName: String
+    hasAttachedRooms: Boolean
+    hasKivaInside: Boolean
+    height: Float
+    # humanOrAnimal: ???
+    isCremation: Boolean
+    isHuman: Boolean
+    isMound: Boolean
+    isPrimary: Boolean
+    isRocks: Boolean
+    length: Float
+    minStoreys: Int
+    maxStoreys: Int
+    # orientation: ???
+    position: String
+    primary: Boolean
+    provenance: [Provenance]
+    public: Boolean
+    relationToPlaza: String
+    sites: [Site] @relationship(type: "FOUND_IN", direction: OUT)
+    shape: String
+    storiesMax: Int
+    storiesMin: Int
+    surfaceArea: Float
+    type: String
+    use: String
+    uuid: ID!
+    width: Float
+    volume: Float
+}
+
+enum FeatureType {
+    AgriculturalFeature
+    Ballcourt
+    Burial
+    Concentration
+    GreatHouse
+    GreatKiva
+    Pit
+    ReligiousArchitecture
+    MultiwallStructure
+    MortuaryFeature
+}
+
+type Attribute {
+    area: Float
+    construction: String
+    count: Int
+    diameter: Float
+    height: Float
+    length: Float
+    # location: ??? 
+    minDiameter: Float
+    maxDiameter: Float
+    # orientation: ???
+    shape: String
+    surfaceArea: Float
+    type: String
+    uuid: ID!
+    width: Float
+    volume: Float
+
+}
+
+type SystemMap {
+    site: String # uuid of site?
+    system: String
+    uuid: ID!
+    value: String
+}
+
+type ArtifactType {
+    artifactType: String
+    beginAge: Int
+    canChronologyBuilding: Boolean
+    ceramicWare: CeramicWare
+    decoration: String
+    endAge: Int
+    isCorrugated: Boolean
+    isDecorated: Boolean
+    isRedSlipped: Boolean
+    name: String
+    uuid: ID!
+}
+
+type CeramicWare {
+    name: String
+    uuid: ID!
+}
+
+type ProvenanceEvent {
+    provenance: Provenance
+    uuid: ID!
+}
+
+type People {
+    firstName: String
+    middleName: String
+    lastName: String
+    suffix: String
+    uuid: ID!
+}
